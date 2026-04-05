@@ -26,7 +26,7 @@ type App struct {
 	height      int
 }
 
-func NewApp(deps *model.ProjectDeps) App {
+func NewApp(deps *model.ProjectAnalysis) App {
 	return App{
 		projectPath: deps.ProjectPath,
 		warnings:    deps.Warnings,

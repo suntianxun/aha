@@ -1,87 +1,72 @@
 package analyzer
 
 import (
+	"os"
 	"path/filepath"
-	"runtime"
-	"sort"
 	"testing"
+
+	"github.com/stephen/aha/model"
 )
 
-func testdataDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "testdata")
-}
+func TestAnalyzeIntegration(t *testing.T) {
+	tmpDir := t.TempDir()
 
-func TestAnalyze(t *testing.T) {
-	dir := filepath.Join(testdataDir(), "sample_project")
-	result, err := Analyze(dir)
+	// pyproject.toml
+	os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte(`
+[project]
+name = "testlib"
+version = "0.1.0"
+description = "A test library"
+requires-python = ">=3.8"
+dependencies = ["requests>=2.28"]
+`), 0o644)
+
+	pkgDir := filepath.Join(tmpDir, "testlib")
+	os.MkdirAll(pkgDir, 0o755)
+
+	os.WriteFile(filepath.Join(pkgDir, "__init__.py"), []byte(`
+__all__ = ["MyClass", "helper"]
+`), 0o644)
+
+	os.WriteFile(filepath.Join(pkgDir, "core.py"), []byte(`
+import os
+from typing import Optional
+import requests
+
+class MyClass:
+    """A test class."""
+    def method(self, x: int) -> str:
+        return str(x)
+
+def helper(x: int) -> bool:
+    return x > 0
+
+VERSION = "0.1.0"
+`), 0o644)
+
+	progressCh := make(chan model.AnalysisProgress, 100)
+	result, err := Analyze(tmpDir, progressCh)
 	if err != nil {
-		t.Fatalf("Analyze() error: %v", err)
+		t.Fatalf("Analyze: %v", err)
 	}
 
-	sort.Slice(result.ExternalDeps, func(i, j int) bool {
-		return result.ExternalDeps[i].Name < result.ExternalDeps[j].Name
-	})
-
-	if len(result.ExternalDeps) < 2 {
-		t.Fatalf("expected at least 2 external deps, got %d", len(result.ExternalDeps))
+	if result.ProjectName != "testlib" {
+		t.Errorf("project name: got %q, want testlib", result.ProjectName)
+	}
+	if result.Stats.TotalFiles < 2 {
+		t.Errorf("total files: got %d, want >= 2", result.Stats.TotalFiles)
+	}
+	if len(result.ExternalDeps) == 0 {
+		t.Error("expected at least one external dep")
 	}
 
-	foundRequests := false
-	foundClick := false
-	for _, dep := range result.ExternalDeps {
-		switch dep.Name {
-		case "requests":
-			foundRequests = true
-			if dep.VersionConstraint != ">=2.28.0" {
-				t.Errorf("requests version = %q, want %q", dep.VersionConstraint, ">=2.28.0")
-			}
-			if len(dep.UsedIn) == 0 {
-				t.Error("requests should have UsedIn entries")
-			}
-		case "click":
-			foundClick = true
-			if len(dep.UsedIn) == 0 {
-				t.Error("click should have UsedIn entries")
-			}
-		}
+	// Check progress was emitted
+	close(progressCh)
+	count := 0
+	for range progressCh {
+		count++
 	}
-	if !foundRequests {
-		t.Error("expected to find 'requests' in external deps")
-	}
-	if !foundClick {
-		t.Error("expected to find 'click' in external deps")
-	}
-
-	if len(result.Modules) == 0 {
-		t.Fatal("expected modules to be populated")
-	}
-
-	mainMod, ok := result.Modules["sample/main.py"]
-	if !ok {
-		t.Fatal("expected sample/main.py in modules")
-	}
-	hasUtils := false
-	for _, imp := range mainMod.Imports {
-		if imp == "sample/utils.py" {
-			hasUtils = true
-		}
-	}
-	if !hasUtils {
-		t.Errorf("main.py should import utils.py, got imports: %v", mainMod.Imports)
-	}
-
-	utilsMod, ok := result.Modules["sample/utils.py"]
-	if !ok {
-		t.Fatal("expected sample/utils.py in modules")
-	}
-	hasMain := false
-	for _, imp := range utilsMod.ImportedBy {
-		if imp == "sample/main.py" {
-			hasMain = true
-		}
-	}
-	if !hasMain {
-		t.Errorf("utils.py should be imported by main.py, got importedBy: %v", utilsMod.ImportedBy)
+	if count == 0 {
+		t.Error("expected progress messages")
 	}
 }

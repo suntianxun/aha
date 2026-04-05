@@ -24,7 +24,7 @@ func main() {
 
 	projectDir := os.Args[1]
 
-	deps, err := analyzer.Analyze(projectDir)
+	deps, err := analyzer.Analyze(projectDir, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
