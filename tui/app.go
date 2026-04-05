@@ -127,5 +127,7 @@ func (a App) View() tea.View {
 	b.WriteString("\n")
 	b.WriteString(renderHelp(helpItems))
 
-	return tea.NewView(b.String())
+	v := tea.NewView(b.String())
+	v.AltScreen = true
+	return v
 }
