@@ -1,0 +1,6 @@
+[project]
+name = "sample"
+dependencies = [
+    "requests>=2.28.0",
+    "click",
+]
