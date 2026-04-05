@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := tui.NewApp(deps)
+	app := tui.NewExploringApp(deps)
 	p := tea.NewProgram(app)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)

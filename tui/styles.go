@@ -7,7 +7,6 @@ var (
 	colorSecondary = lipgloss.Color("241")
 	colorMuted     = lipgloss.Color("245")
 	colorHighlight = lipgloss.Color("212")
-	colorWarning   = lipgloss.Color("214")
 	colorWhite     = lipgloss.Color("255")
 
 	titleStyle = lipgloss.NewStyle().
@@ -15,10 +14,6 @@ var (
 			Foreground(colorWhite).
 			Background(colorPrimary).
 			Padding(0, 1)
-
-	warningStyle = lipgloss.NewStyle().
-			Foreground(colorWarning).
-			Italic(true)
 
 	activeTabStyle = lipgloss.NewStyle().
 			Bold(true).
