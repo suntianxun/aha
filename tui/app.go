@@ -9,29 +9,19 @@ import (
 	"github.com/stephen/aha/model"
 )
 
-type tab int
-
-const (
-	tabExternal tab = iota
-	tabInternal
-)
-
 type App struct {
-	projectPath string
-	warnings    []string
-	activeTab   tab
-	external    externalModel
-	internal    internalModel
-	width       int
-	height      int
+	projectPath  string
+	warnings     []string
+	dependencies dependenciesModel
+	width        int
+	height       int
 }
 
 func NewApp(deps *model.ProjectAnalysis) App {
 	return App{
-		projectPath: deps.ProjectPath,
-		warnings:    deps.Warnings,
-		external:    newExternalModel(deps.ExternalDeps),
-		internal:    newInternalModel(deps.Modules),
+		projectPath:  deps.ProjectPath,
+		warnings:     deps.Warnings,
+		dependencies: newDependenciesModel(deps.ExternalDeps, deps.Modules),
 	}
 }
 
@@ -44,35 +34,19 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
-		contentHeight := a.height - 6
-		a.external.width = a.width
-		a.external.height = contentHeight
-		a.internal.height = contentHeight
+		a.dependencies.width = a.width
+		a.dependencies.height = a.height - 6
 		return a, nil
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return a, tea.Quit
-		case "tab":
-			if a.activeTab == tabExternal {
-				a.activeTab = tabInternal
-			} else {
-				a.activeTab = tabExternal
-			}
-			return a, nil
 		}
 
-		switch a.activeTab {
-		case tabExternal:
-			var cmd tea.Cmd
-			a.external, cmd = a.external.Update(msg)
-			return a, cmd
-		case tabInternal:
-			var cmd tea.Cmd
-			a.internal, cmd = a.internal.Update(msg)
-			return a, cmd
-		}
+		var cmd tea.Cmd
+		a.dependencies, cmd = a.dependencies.Update(msg)
+		return a, cmd
 	}
 
 	return a, nil
@@ -89,22 +63,11 @@ func (a App) View() tea.View {
 	}
 	b.WriteString("\n\n")
 
-	extTab := inactiveTabStyle.Render("External Dependencies")
-	intTab := inactiveTabStyle.Render("Internal Dependencies")
-	if a.activeTab == tabExternal {
-		extTab = activeTabStyle.Render("External Dependencies")
-	} else {
-		intTab = activeTabStyle.Render("Internal Dependencies")
-	}
-	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, extTab, " ", intTab))
+	depsTab := activeTabStyle.Render("Dependencies")
+	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, depsTab))
 	b.WriteString("\n\n")
 
-	switch a.activeTab {
-	case tabExternal:
-		b.WriteString(a.external.View())
-	case tabInternal:
-		b.WriteString(a.internal.View())
-	}
+	b.WriteString(a.dependencies.View())
 
 	rendered := b.String()
 	lines := strings.Count(rendered, "\n")
@@ -114,10 +77,10 @@ func (a App) View() tea.View {
 
 	var helpItems []helpItem
 	helpItems = append(helpItems,
-		helpItem{"tab", "switch tab"},
+		helpItem{"e/i", "switch view"},
 		helpItem{"up/down", "navigate"},
 	)
-	if a.activeTab == tabExternal {
+	if a.dependencies.view == depViewExternal {
 		helpItems = append(helpItems, helpItem{"s", "sort"})
 	} else {
 		helpItems = append(helpItems, helpItem{"enter", "expand/collapse"})
