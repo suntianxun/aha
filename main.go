@@ -9,7 +9,14 @@ import (
 	"github.com/stephen/aha/tui"
 )
 
+var version = "dev"
+
 func main() {
+	if len(os.Args) >= 2 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Printf("aha %s\n", version)
+		os.Exit(0)
+	}
+
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: aha <path-to-python-project>\n")
 		os.Exit(1)
