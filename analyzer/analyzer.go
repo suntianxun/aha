@@ -174,7 +174,10 @@ func resolveAbsoluteImport(imp string, modules map[string]*model.Module, project
 		if _, ok := modules[candidate]; ok {
 			return candidate
 		}
-		candidate = filepath.Join(append(parts[:i], "__init__.py")...)
+		initParts := make([]string, i+1)
+		copy(initParts, parts[:i])
+		initParts[i] = "__init__.py"
+		candidate = filepath.Join(initParts...)
 		if _, ok := modules[candidate]; ok {
 			return candidate
 		}

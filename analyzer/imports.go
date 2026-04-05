@@ -7,7 +7,7 @@ import (
 
 var (
 	reImport     = regexp.MustCompile(`^import\s+(.+)$`)
-	reFromImport = regexp.MustCompile(`^from\s+(\.{0,3}\w*)\s+import\s+(.+)$`)
+	reFromImport = regexp.MustCompile(`^from\s+(\.{0,3}[\w.]*)\s+import\s+(.+)$`)
 )
 
 func ParseImports(source string) []string {

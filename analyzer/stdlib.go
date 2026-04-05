@@ -53,7 +53,7 @@ var stdlibModules = map[string]bool{
 	"winreg": true, "winsound": true, "wsgiref": true, "xdrlib": true,
 	"xml": true, "xmlrpc": true, "zipapp": true, "zipfile": true,
 	"zipimport": true, "zlib": true, "zoneinfo": true,
-	"os.path": true, "collections.abc": true, "typing_extensions": true,
+	"os.path": true, "collections.abc": true,
 }
 
 func IsStdlib(name string) bool {

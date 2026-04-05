@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -107,19 +108,31 @@ func ParseSetupPy(path string) ([]DeclaredDep, error) {
 func LoadDeclaredDeps(dir string) ([]DeclaredDep, []string) {
 	var warnings []string
 
-	pyprojectPath := dir + "/pyproject.toml"
-	if deps, err := ParsePyprojectToml(pyprojectPath); err == nil && len(deps) > 0 {
-		return deps, warnings
+	pyprojectPath := filepath.Join(dir, "pyproject.toml")
+	if _, err := os.Stat(pyprojectPath); err == nil {
+		if deps, err := ParsePyprojectToml(pyprojectPath); err == nil && len(deps) > 0 {
+			return deps, warnings
+		} else if err != nil {
+			warnings = append(warnings, "pyproject.toml found but could not be parsed")
+		}
 	}
 
-	setupPath := dir + "/setup.py"
-	if deps, err := ParseSetupPy(setupPath); err == nil && len(deps) > 0 {
-		return deps, warnings
+	setupPath := filepath.Join(dir, "setup.py")
+	if _, err := os.Stat(setupPath); err == nil {
+		if deps, err := ParseSetupPy(setupPath); err == nil && len(deps) > 0 {
+			return deps, warnings
+		} else if err != nil {
+			warnings = append(warnings, "setup.py found but could not be parsed")
+		}
 	}
 
-	reqPath := dir + "/requirements.txt"
-	if deps, err := ParseRequirementsTxt(reqPath); err == nil && len(deps) > 0 {
-		return deps, warnings
+	reqPath := filepath.Join(dir, "requirements.txt")
+	if _, err := os.Stat(reqPath); err == nil {
+		if deps, err := ParseRequirementsTxt(reqPath); err == nil && len(deps) > 0 {
+			return deps, warnings
+		} else if err != nil {
+			warnings = append(warnings, "requirements.txt found but could not be parsed")
+		}
 	}
 
 	warnings = append(warnings, "No dependency config found (pyproject.toml, setup.py, or requirements.txt)")
